@@ -1,0 +1,40 @@
+#######################################
+# Syntax Coloring Map for Cytron EZMP3
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+CytronEZMP3		KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+play KEYWORD2
+next	KEYWORD2
+prev	KEYWORD2 
+setVolume	KEYWORD2
+setEQ	KEYWORD2
+setDevice	KEYWORD2
+sleep	KEYWORD2 
+reset	KEYWORD2
+pause	KEYWORD2 
+stop	KEYWORD2 
+on	KEYWORD2
+off	KEYWORD2
+playAll	KEYWORD2
+playTrack	KEYWORD2
+getCurrentDevice	KEYWORD2
+getCurrentStatus	KEYWORD2
+getVolume	KEYWORD2
+getTotalFiles	KEYWORD2
+getTrackNo	KEYWORD2
+repeatTrack	KEYWORD2
+randomPlay	KEYWORD2				
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
