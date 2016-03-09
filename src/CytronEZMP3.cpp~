@@ -131,14 +131,14 @@ void CytronEZMP3::send_func () {
 bool CytronEZMP3::init ()
 {	
 	delay(1000);
-	//while(_serial->peek()!= 0x7e)
-	//	_serial->read();
 	int timeout = 1000;
 	while(timeout--&&_serial->peek()!= 0x7e)
 	{
 		_serial->read();
 		delayMicroseconds(1000);
 	}
+	//while(_serial->peek()!= 0x7e)
+	//	_serial->read();
 	int stat = readForResponses(0x3f, 0x40, 5000);
 	
 	if(stat <= 0) return false;

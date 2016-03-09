@@ -48,8 +48,8 @@ class CytronEZMP3: public Stream
 	CytronEZMP3();
 	~CytronEZMP3();
 	bool begin(uint8_t rxpin = 2, uint8_t txpin = 3, long baudrate = 9600);
-	bool begin(HardwareSerial &_hSerial, long baudrate = 9600);
-	bool begin(SoftwareSerial &_sSerial, long baudrate = 9600);
+	//bool begin(HardwareSerial &_hSerial, long baudrate = 9600);
+	//bool begin(SoftwareSerial &_sSerial, long baudrate = 9600);
 	void setFolderOption (bool opt);
 	bool isPlaying() {return (!digitalRead(PIN_BUSY));}
 	void playPhysical (uint16_t num); 

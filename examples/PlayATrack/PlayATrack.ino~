@@ -21,11 +21,11 @@ Distributed as-is; no warranty is given.
 ******************************************************************************/
 #include <CytronEZMP3.h>
 
-CytronEZMP3 mp3;
+CytronEZMP3 mp3(2, 3);
 
 void setup () {
 	Serial.begin(9600);
-  if(!mp3.begin(2, 3))
+  if(!mp3.begin())
   {
     Serial.println("Init failed");
     while(1);

@@ -5,5 +5,5 @@ maintainer= Cytron Technologies Sdn Bhd <www.cytron.com.my>
 sentence=Library for using Cytron EasyMP3 Shield
 paragraph=This library works with Cytron EasyMP3 Shield
 category=Device Control
-url= https://github.com/CytronTechnologies/Cytron-EasyMP3-Shield
+url= https://github.com/CytronTechnologies/Cytron_BlueBee4.0_AT_Library/
 architectures=*
