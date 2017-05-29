@@ -3,7 +3,7 @@ PlayATrack.ino
 Cytron EasyMP3 Shield Library example sketch
 Created by Ng Beng Chet @ Cytron Technologies Sdn Bhd 
 Original Creation Date: Mar 10, 2016
-https://github.com/CytronTechnologies/CytronWiFiShield
+https://github.com/CytronTechnologies/Cytron-EasyMP3-Shield
 
 Modified from DFPlayer_Mini_Mp3 Library examples
 Credit to lisper <lisper.li@dfrobot.com> @ DFRobot
