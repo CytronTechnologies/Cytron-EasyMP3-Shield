@@ -43,7 +43,10 @@ void setup () {
   Serial.print("Total files: ");
   Serial.println(mp3.getTotalFiles());
 
-  //delay(1000);
+  // create folders named "01" to "03" in SD card/U-disk root directory
+  // then place at least 5 songs in each folder
+  // the song name format is similar to the songs in folder "mp3"
+  
   mp3.playTrackFromFolder(1, 5); //folder 1, track 5
   delay(20000);
 
