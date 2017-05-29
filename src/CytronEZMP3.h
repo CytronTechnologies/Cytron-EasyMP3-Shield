@@ -49,7 +49,7 @@ class CytronEZMP3: public Stream
 	~CytronEZMP3();
 	bool begin(uint8_t rxpin = 2, uint8_t txpin = 3, long baudrate = 9600);
 	bool begin(HardwareSerial &_hSerial, long baudrate = 9600);
-	bool begin(SoftwareSerial &_sSerial, long baudrate = 9600);
+	//bool begin(SoftwareSerial &_sSerial, long baudrate = 9600);
 	void setFolderOption (bool opt);
 	bool isPlaying() {return (!digitalRead(PIN_BUSY));}
 	void playPhysical (uint16_t num); 
@@ -97,7 +97,7 @@ class CytronEZMP3: public Stream
 	SoftwareSerial *swSerial;
 	bool isHardwareSerial;
 	bool _isReply;
-	uint8_t _received;
+	int _received;
 	uint8_t _dev;
 	uint16_t _totalFiles;
 	uint16_t _track;
@@ -114,7 +114,7 @@ class CytronEZMP3: public Stream
 	void fill_uint16_bigend (uint8_t *thebuf, uint16_t data);
 	void send_func();
 	void playManyTracksFromSingleFolder(uint8_t folder, uint16_t track);
-	int readForResponses(uint16_t cmd, uint16_t fail, unsigned int timeout);
+	int readForResponses(uint16_t cmd, uint16_t fail, unsigned int timeout, bool returnVal=false);
 	
 	bool init();
 	void mp3_DAC (boolean state);
@@ -126,7 +126,8 @@ class CytronEZMP3: public Stream
 	void get_u_current ();
 	//void mp3_get_flash_current ();	
 	void single_loop (boolean state); //set single loop 
-	
+	uint8_t retVal[2];
+	int timedRead();
 };
 
 

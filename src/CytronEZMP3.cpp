@@ -66,13 +66,14 @@ bool CytronEZMP3::begin(HardwareSerial &_hSerial, long baudrate)
 	_hSerial.begin(baudrate);
 	_serial = &_hSerial;
 	isHardwareSerial = true;
+	_txpin = 1;
 	delay(100);
 	reset();
 	return init();
 
 }
 
-bool CytronEZMP3::begin(SoftwareSerial &_sSerial, long baudrate)
+/*bool CytronEZMP3::begin(SoftwareSerial &_sSerial, long baudrate)
 {
 	pinMode(PIN_BUSY, INPUT); 
 	swSerial = &_sSerial;
@@ -82,7 +83,7 @@ bool CytronEZMP3::begin(SoftwareSerial &_sSerial, long baudrate)
 	delay(100);
 	reset();
 	return init();
-}
+}*/
 
 //
 void CytronEZMP3::fill_uint16_bigend (uint8_t *thebuf, uint16_t data) {
@@ -108,13 +109,18 @@ void CytronEZMP3::mp3_fill_checksum () {
 //
 void CytronEZMP3::mp3_send_cmd (uint8_t cmd, uint16_t arg) {
 	
+	// clear serial buffer before start new command
+	flush();
+
+	pinMode(_txpin, OUTPUT);
 	send_buf[3] = cmd;
 	send_buf[4] = _isReply;
 	fill_uint16_bigend ((send_buf+5), arg);
 	mp3_fill_checksum ();
-	send_func ();
-	delay(100);
 
+	send_func();
+	delay(100);
+	pinMode(_txpin, INPUT);
 }
 
 //
@@ -139,7 +145,7 @@ bool CytronEZMP3::init ()
 		_serial->read();
 		delayMicroseconds(1000);
 	}
-	int stat = readForResponses(0x3f, 0x40, 5000);
+	int stat = readForResponses(0x3f, 0x40, 5000, true);
 	
 	if(stat <= 0) return false;
 
@@ -147,7 +153,7 @@ bool CytronEZMP3::init ()
 	Serial.print("\r\nSystem Init successful!\r\n");
 #endif
 	
-	_dev = recv_buf[_received - 4];
+	_dev = recv_buf[6];
 	
 	switch(_dev)
 	{
@@ -172,7 +178,13 @@ bool CytronEZMP3::init ()
 	#if DEBUG1
 		Serial.print("\r\nInit successful\r\n");
 	#endif
-		
+
+	// set timeout for serial for responses later
+	_serial->setTimeout(1000);
+
+	// start the fix
+	pinMode(_txpin, INPUT);
+
 	return true;
 	
 }
@@ -278,8 +290,8 @@ uint8_t CytronEZMP3::getCurrentStatus (){
 	
 	_isReply = 0;
 	mp3_send_cmd (0x42);
-	readForResponses(0x42, 0x40, 5000);
-	_state = recv_buf[6];
+	readForResponses(0x42, 0x40, 5000, true);
+	_state = retVal[1];
 	return _state;
 }
 
@@ -288,8 +300,8 @@ uint16_t CytronEZMP3::getVolume () {
 	
 	_isReply = 0;
 	mp3_send_cmd (0x43);
-	readForResponses(0x43, 0x40, 5000);
-	_vol = recv_buf[5]*256+recv_buf[6];
+	readForResponses(0x43, 0x40, 5000, true);
+	_vol = retVal[0] << 8 | retVal[1];
 	return _vol;
 }
 
@@ -317,16 +329,16 @@ void CytronEZMP3::get_u_sum () {
 	
 	_isReply = 0;
 	mp3_send_cmd (0x47);
-	readForResponses(0x47, 0x40, 5000);
-	_totalFiles = recv_buf[5]*256+recv_buf[6];
+	readForResponses(0x47, 0x40, 5000, true);
+	_totalFiles = retVal[0] << 8 | retVal[1];
 }
 
 //
 void CytronEZMP3::get_tf_sum () {
 	_isReply = 0;
 	mp3_send_cmd (0x48);
-	readForResponses(0x48, 0x40, 5000);
-	_totalFiles = recv_buf[5]*256+recv_buf[6];
+	readForResponses(0x48, 0x40, 5000, true);
+	_totalFiles = retVal[0] << 8 | retVal[1];
 }
 
 //
@@ -356,16 +368,16 @@ uint16_t CytronEZMP3::getTrackNo(){
 void CytronEZMP3::get_tf_current () {
 	_isReply = 0;
 	mp3_send_cmd (0x4c);
-	if(readForResponses(0x4c, 0x40, 5000)==1)
-		_track = recv_buf[5]*256+recv_buf[6];
+	if(readForResponses(0x4c, 0x40, 5000, true)==1)
+		_track = retVal[0] << 8 | retVal[1];
 }
 
 //
 void CytronEZMP3::get_u_current () {
 	_isReply = 0;
 	mp3_send_cmd (0x4b);
-	if(readForResponses(0x4b, 0x40, 5000)==1)
-		_track = recv_buf[5]*256+recv_buf[6];
+	if(readForResponses(0x4b, 0x40, 5000, true)==1)
+		_track = retVal[0] << 8 | retVal[1];
 }
 
 //
@@ -472,7 +484,7 @@ int CytronEZMP3::peek()
 
 void CytronEZMP3::flush()
 {
-	_serial->flush();
+	 while(available()) read();
 }
 
 void CytronEZMP3::listen()
@@ -484,82 +496,87 @@ void CytronEZMP3::listen()
 	}
 }
 
-int CytronEZMP3::readForResponses(uint16_t cmd, uint16_t fail, unsigned int timeout)
+int CytronEZMP3::readForResponses(uint16_t cmd, uint16_t fail, unsigned int timeout, bool returnVal)
 {
-	_received = 0; // received keeps track of number of chars read
+	_received = -2; // received keeps track of number of chars read
+	bool _fail = false;
 	
-	memset(recv_buf, '\0', EZMP3_RX_BUFFER_LEN);	
-	
-	_serial->setTimeout(1000);
-	
-	while(_serial->available()<=0) // in case there is really nothing coming back
-	{
-		if(timeout == 0) return -2;
-		timeout--;delay(1);
-	}
+	memset(recv_buf, '\0', EZMP3_RX_BUFFER_LEN);
+	memset(retVal, '\0', 2);
 	
 	if(_serial->available()) //wait until first byte is 0x7e
 	{
-		while(_serial->peek()!=0x7e)
-			_serial->read();
-	}
-	
-	_received = _serial->readBytes(recv_buf , EZMP3_RX_BUFFER_LEN);
-	
-#if DEBUG0
-	Serial.write(recv_buf, _received);
-#endif
+		// set timeout
+		long _startmillis = millis();		
+		do{
+			if(_serial->peek() == 0x7e){
+				// reset fail flag
+				_fail = false;
 
+				// start checking first 4 bytes
+				recv_buf[0] = timedRead();
+				recv_buf[1] = timedRead(); // 0xff
+				uint8_t len = timedRead(); // len
+				recv_buf[2] = len;
+				int c = timedRead();
+				recv_buf[3] = c;
+
+				// if cmd is correct, start data extraction
+				if(c == cmd){ 
+					_received = _serial->readBytes(recv_buf+4, len + 2);
+					break;
+				}
+
+				// if cmd is fail cmd, set fail flag to true
+				else if(c == fail)
+					_fail = true;	
+				
+			}
+		}while(millis() - _startmillis < timeout);
+	}
+
+	if(_received < 0){
 #if DEBUG1
-	//possible outcome:
-	Serial.print("\r\ndata:");
-	Serial.println(_received);
-
-	if(_received == 0) 
-		Serial.print("\r\nno data\r\n");
-	
-	else if (_received < 10)
-		Serial.print("\r\ndata missing\r\n");
-	
-	else if (_received > 20)
-		Serial.print("\r\ndata overflow\r\n");
-	
-	else if (_received > 10)
-		Serial.print("\r\nextra data\r\n");
-	
-	else
-		Serial.print("\r\ngood data\r\n");
+		Serial.print("\r\nTimeout\r\n");
 #endif
-	
-	if(_received == 10 || _received == 20)
-	{	//_received-1
-		if(recv_buf[9] == 0xef)
-		{	//_received-7
-			if(recv_buf[3] == cmd)
- 			#if DEBUG1
-			{
-				Serial.print("\r\nmatching cmd\r\n");
-			#endif
-				return 1;
-			#if DEBUG1
-			}
-			#endif
-			//_received-7
-			else if(recv_buf[3] == fail) 
-			{
-			#if DEBUG1
-				Serial.print("\r\nerror\r\n");
-			#endif
-				if(errMsg)
-					(*errMsg)();
-				return 0;
-			}
-		}
+		return _received;
 	}
-	#if DEBUG1
-	else
-		Serial.print("\r\nIncorrect amount of data\r\n");
-	#endif
-			
-	return -1;
+
+#if DEBUG0
+	//possible outcome:
+	Serial.print("\r\nAmount of data received: ");Serial.println(_received);
+	if(_received > 0){
+		Serial.write(recv_buf, 10);
+	}
+	Serial.println();
+#endif
+	if(_received == 0) return 0;
+	else if (_received > 0 && _fail){
+#if DEBUG1
+		Serial.print("\r\nerror\r\n");
+#endif
+		if(errMsg) (*errMsg)();
+		return 0;	
+	}
+	else{
+		if(returnVal){
+			retVal[0] = recv_buf[5];
+			retVal[1] = recv_buf[6]; 
+		}
+		return 1;
+	}
+}
+
+int CytronEZMP3::timedRead()
+{
+  int _timeout = 1000;
+  int c;
+  long _startMillis = millis();
+  do
+  {
+    c = _serial->read();
+    if (c >= 0) return c;
+  } while(millis() - _startMillis < _timeout);
+
+  return -1; // -1 indicates timeout
 }
