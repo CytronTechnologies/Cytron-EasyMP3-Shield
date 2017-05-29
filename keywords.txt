@@ -35,7 +35,7 @@ repeatTrack	KEYWORD2
 randomPlay	KEYWORD2
 playTrackFromFolder	KEYWORD2
 playFolderRepeat	KEYWORD2
-setErrMsg	KEYWORD2				
+setErrorCallback	KEYWORD2				
 
 #######################################
 # Constants (LITERAL1)

@@ -24,46 +24,70 @@ Distributed as-is; no warranty is given.
 CytronEZMP3 mp3;
 
 void setup () {
-  
+
   Serial.begin(9600);
   pinMode(13, OUTPUT);
-  
-  if(!mp3.begin(2, 3))
+
+  if (!mp3.begin(2, 3))
   {
-    Serial.println("Init failed");
-    while(1);
+    Serial.println("Initialisation failed");
+    while (1);
   }
   mp3.setVolume(20);
-  
-  mp3.setErrMsg(blinking);  
-  
+
+  mp3.setErrorCallback(errorCb);
+
   Serial.print("Device: ");
-  Serial.println(mp3.getCurrentDevice()==1?"U-Disk":"microSD");
+  Serial.println(mp3.getCurrentDevice() == 1 ? "U-Disk" : "microSD");
 
   Serial.print("Total files: ");
   Serial.println(mp3.getTotalFiles());
 
   // create folders named "01" to "03" in SD card/U-disk root directory
-  // then place at least 5 songs in each folder
+  // then place songs in each folder
   // the song name format is similar to the songs in folder "mp3"
-  
-  mp3.playTrackFromFolder(1, 5); //folder 1, track 5
-  delay(20000);
+
+  mp3.playTrackFromFolder(1, 2); //folder 1, track 3
+  while(mp3.isPlaying()); // play the song for 5 seconds
 
   mp3.playFolderRepeat(3); // repeat playing folder 3
-  
+
 }
 
 void loop () {
   //do something here
 }
 
-void blinking()
+void errorCb()
 {
-  Serial.println("Error!");
-  Serial.print("Current status: ");
-  Serial.println(mp3.getCurrentStatus());
-  while(1)
+  Serial.print(F("[ERROR] "));
+  switch (mp3.errorCode()) {
+    case BUSY:
+      Serial.println(F("Busy"));
+      break;
+    case SLEEPING:
+      Serial.println(F("In sleep mode"));
+      break;
+    case SERIAL_WRONG_STACK:
+      Serial.println(F("Serial wrong stack"));
+      break;
+    case CHECKSUM_ERR:
+      Serial.println(F("Checksum error"));
+      break;
+    case FILE_OUT_OF_INDEX:
+      Serial.println(F("File number is out of index"));
+      break;
+    case FILE_NOT_FOUND:
+      Serial.println(F("File not found"));
+      break;
+    case DATA_MISMATCH:
+      Serial.println(F("Data mismatch"));
+      break;
+    default:
+      Serial.println(F("Unknown error"));
+
+  }
+  while (1)
   {
     digitalWrite(13, HIGH);
     delay(1000);
@@ -71,4 +95,3 @@ void blinking()
     delay(1000);
   }
 }
-

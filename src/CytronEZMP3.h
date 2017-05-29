@@ -42,6 +42,16 @@ Distributed as-is; no warranty is given.
 // 7~8	->	checksum = 0 - ( FF+06+0F+00+01+01 )
 // 9	->	EF is end code
 
+typedef enum mp3_error_type{
+	BUSY=1,
+	SLEEPING,
+	SERIAL_WRONG_STACK,
+	CHECKSUM_ERR,
+	FILE_OUT_OF_INDEX,
+	FILE_NOT_FOUND,
+	DATA_MISMATCH=8,
+};
+
 class CytronEZMP3: public Stream
 {
   public:
@@ -49,7 +59,6 @@ class CytronEZMP3: public Stream
 	~CytronEZMP3();
 	bool begin(uint8_t rxpin = 2, uint8_t txpin = 3, long baudrate = 9600);
 	bool begin(HardwareSerial &_hSerial, long baudrate = 9600);
-	//bool begin(SoftwareSerial &_sSerial, long baudrate = 9600);
 	void setFolderOption (bool opt);
 	bool isPlaying() {return (!digitalRead(PIN_BUSY));}
 	void playPhysical (uint16_t num); 
@@ -79,7 +88,8 @@ class CytronEZMP3: public Stream
 	void playFolderRepeat(uint8_t folder);
 	void repeatTrack (uint16_t num); 
 	void randomPlay (); 
-	void setErrMsg(void (*func)());
+	void setErrorCallback(void (*func)());
+	uint8_t errorCode();
 	
 	int available();
 	size_t write(uint8_t);
@@ -104,6 +114,8 @@ class CytronEZMP3: public Stream
 	uint16_t _vol;
 	uint8_t _state;
 	bool isManyFolder;
+        uint8_t _errorCode;
+	void (*errMsg)() = NULL;
 	
 	uint8_t send_buf[10] = {0x7E, 0xFF, 06, 00, 00, 00, 00, 00, 00, 0xEF};
 	uint8_t recv_buf[EZMP3_RX_BUFFER_LEN];

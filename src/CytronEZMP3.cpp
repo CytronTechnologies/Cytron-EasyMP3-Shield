@@ -23,37 +23,31 @@ Distributed as-is; no warranty is given.
 #include "CytronEZMP3.h"
 #include <SoftwareSerial.h>
 
-void (*errMsg)() = NULL;
 //
-CytronEZMP3::CytronEZMP3():isManyFolder(false){}
+CytronEZMP3::CytronEZMP3():
+	isManyFolder(false)
+{
+}
 
 //
 CytronEZMP3::~CytronEZMP3()
 {  
-#if DEBUG1	
-	Serial.println("this object is deleted");
-#endif
 }
 //
 bool CytronEZMP3::begin(uint8_t rxpin, uint8_t txpin,long baudrate)
 {
+	
+	//if(_rxpin==0 &&_txpin==1)
+		//return begin(Serial, baudrate);
+
 	pinMode(PIN_BUSY, INPUT);
 	_rxpin = rxpin;
 	_txpin = txpin;	 
 
-	if(_rxpin==0&&_txpin==1)
-	{
-		Serial.begin(baudrate);
-		_serial = &Serial;
-		isHardwareSerial = true;
-	}
-	else
-	{			
-		swSerial =  new SoftwareSerial(_rxpin,_txpin); 		
-		swSerial->begin(baudrate);
-		_serial = swSerial;
-		isHardwareSerial = false;
-	}
+	swSerial =  new SoftwareSerial(_rxpin,_txpin); 		
+	swSerial->begin(baudrate);
+	_serial = swSerial;
+	isHardwareSerial = false;
 	delay(100);
 	reset();
 	return init();
@@ -72,18 +66,6 @@ bool CytronEZMP3::begin(HardwareSerial &_hSerial, long baudrate)
 	return init();
 
 }
-
-/*bool CytronEZMP3::begin(SoftwareSerial &_sSerial, long baudrate)
-{
-	pinMode(PIN_BUSY, INPUT); 
-	swSerial = &_sSerial;
-	swSerial->begin(baudrate);
-	_serial = swSerial;
-	isHardwareSerial = false;
-	delay(100);
-	reset();
-	return init();
-}*/
 
 //
 void CytronEZMP3::fill_uint16_bigend (uint8_t *thebuf, uint16_t data) {
@@ -120,7 +102,7 @@ void CytronEZMP3::mp3_send_cmd (uint8_t cmd, uint16_t arg) {
 
 	send_func();
 	delay(100);
-	pinMode(_txpin, INPUT);
+	pinMode(_txpin, INPUT_PULLUP);
 }
 
 //
@@ -136,15 +118,13 @@ void CytronEZMP3::send_func () {
 
 bool CytronEZMP3::init ()
 {	
-	delay(1000);
-	//while(_serial->peek()!= 0x7e)
-	//	_serial->read();
 	int timeout = 1000;
 	while(timeout--&&_serial->peek()!= 0x7e)
 	{
 		_serial->read();
 		delayMicroseconds(1000);
 	}
+
 	int stat = readForResponses(0x3f, 0x40, 5000, true);
 	
 	if(stat <= 0) return false;
@@ -172,9 +152,9 @@ bool CytronEZMP3::init ()
 	setDevice(_dev);
 	if(_dev == 1) 
 		delay(2000); //U-disk takes longer time to initialise file system
+	
 	setVolume(15);
-//	get_state();
-	delay(100);
+
 	#if DEBUG1
 		Serial.print("\r\nInit successful\r\n");
 	#endif
@@ -327,7 +307,7 @@ uint16_t CytronEZMP3::getTotalFiles (){
 //
 void CytronEZMP3::get_u_sum () {
 	
-	_isReply = 0;
+	_isReply = 1;
 	mp3_send_cmd (0x47);
 	readForResponses(0x47, 0x40, 5000, true);
 	_totalFiles = retVal[0] << 8 | retVal[1];
@@ -335,7 +315,7 @@ void CytronEZMP3::get_u_sum () {
 
 //
 void CytronEZMP3::get_tf_sum () {
-	_isReply = 0;
+	_isReply = 1;
 	mp3_send_cmd (0x48);
 	readForResponses(0x48, 0x40, 5000, true);
 	_totalFiles = retVal[0] << 8 | retVal[1];
@@ -395,10 +375,6 @@ void CytronEZMP3::playTrackFromFolder(uint8_t folder, uint8_t track){
 		_isReply = 0;
 		uint16_t dat = (folder << 8) + track;	
 		mp3_send_cmd (0x0F, dat);
-#if DEBUG1
-		Serial.print("sent data: ");Serial.println(dat);
-		readForResponses(0x0F, 0x40, 5000);
-#endif
 	}
 	else
 		playManyTracksFromSingleFolder(folder, track);
@@ -411,10 +387,6 @@ void CytronEZMP3::playManyTracksFromSingleFolder(uint8_t folder, uint16_t track)
 	if(track > 0xFFF) return;
 	uint16_t dat = (folder << 12) + track;
 	mp3_send_cmd(0x14, dat);
-#if DEBUG1
-	Serial.print("sent data: ");Serial.println(dat);
-	readForResponses(0x14, 0x40, 5000);
-#endif
 }
 
 // repeat songs from folder
@@ -422,9 +394,6 @@ void CytronEZMP3::playFolderRepeat(uint8_t folder){
 	if(folder==0 || folder > 99) return;
 	_isReply = 0;	
 	mp3_send_cmd (0x17, folder);
-#if DEBUG1
-	readForResponses(0x17, 0x40, 5000);
-#endif
 }
 
 void CytronEZMP3::playAll(boolean state){
@@ -454,15 +423,19 @@ void CytronEZMP3::randomPlay () {
 	mp3_send_cmd (0x18);
 }
 //
-void CytronEZMP3::setErrMsg(void (*func)()){
-	errMsg = func;
+void CytronEZMP3::setErrorCallback(void (*func)()){
+	this->errMsg = func;
 }
 
+//
+uint8_t CytronEZMP3::errorCode(){
+	return _errorCode;
+}
 
 int CytronEZMP3::available()
 {
 	int available = _serial->available();
-	if(available==0) delay(30);
+	if(available==0) delay(5);
 	
 	return _serial->available();
 }
@@ -504,43 +477,42 @@ int CytronEZMP3::readForResponses(uint16_t cmd, uint16_t fail, unsigned int time
 	memset(recv_buf, '\0', EZMP3_RX_BUFFER_LEN);
 	memset(retVal, '\0', 2);
 	
-	// set 2 seconds as response timeout
-	uint16_t _timeout = 2000;
-	while(available() <= 0 && _timeout--) delay(1);
+	// set timeout
+	long _startmillis = millis();		
+	do{
+		//wait until first byte is 0x7e
+		if(peek() == 0x7e){
+			// reset fail flag
+			_fail = false;
 
-	if(available()) //wait until first byte is 0x7e
-	{
-		// set timeout
-		long _startmillis = millis();		
-		do{
-			if(peek() == 0x7e){
-				// reset fail flag
-				_fail = false;
+			// start checking first 4 bytes
+			recv_buf[0] = timedRead();
+			recv_buf[1] = timedRead(); // 0xff
+			uint8_t len = timedRead(); // len
+			recv_buf[2] = len;
+			int c = timedRead();
+			recv_buf[3] = c;
 
-				// start checking first 4 bytes
-				recv_buf[0] = timedRead();
-				recv_buf[1] = timedRead(); // 0xff
-				uint8_t len = timedRead(); // len
-				recv_buf[2] = len;
-				int c = timedRead();
-				recv_buf[3] = c;
-
-				// if cmd is correct, start data extraction
-				if(c == cmd){ 
-					_received = readBytes(recv_buf+4, len + 2);
-					break;
-				}
-
-				// if cmd is fail cmd, set fail flag to true
-				else if(c == fail)
-					_fail = true;	
-				
+			// if cmd is correct, start data extraction
+			if(c == cmd){ 
+				_received = readBytes(recv_buf+4, len);
+				break;
 			}
-			else
-				read(); // clear the one byte from serial buffer
+
+			// if cmd is fail cmd, set fail flag to true
+			else if(c == fail){
+				_received = readBytes(recv_buf+4, len);
+				_fail = true;
+					
+				// instant break, or wait until timeout
+				break;
+			}
 				
-		}while(millis() - _startmillis < timeout);
-	}
+		}
+		else
+			read(); // clear the one byte from serial buffer
+				
+	}while(millis() - _startmillis < timeout);
 
 	if(_received < 0){
 #if DEBUG1
@@ -553,16 +525,22 @@ int CytronEZMP3::readForResponses(uint16_t cmd, uint16_t fail, unsigned int time
 	//possible outcome:
 	Serial.print("\r\nAmount of data received: ");Serial.println(_received);
 	if(_received > 0){
-		Serial.write(recv_buf, 10);
+		for(uint8_t i=0;i<10;i++){
+			if(recv_buf[i] < 16)
+				Serial.print('0');			
+			Serial.print(recv_buf[i], HEX);
+			Serial.print(' ');
+		}
 	}
 	Serial.println();
 #endif
 	if(_received == 0) return 0;
 	else if (_received > 0 && _fail){
+		_errorCode = recv_buf[5] << 8 | recv_buf[6];
 #if DEBUG1
-		Serial.print("\r\nerror\r\n");
+		Serial.print("\r\nError\r\n");
 #endif
-		if(errMsg) (*errMsg)();
+		if(this->errMsg) (*this->errMsg)();
 		return 0;	
 	}
 	else{
