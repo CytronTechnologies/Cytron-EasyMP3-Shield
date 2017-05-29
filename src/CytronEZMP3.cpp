@@ -504,12 +504,16 @@ int CytronEZMP3::readForResponses(uint16_t cmd, uint16_t fail, unsigned int time
 	memset(recv_buf, '\0', EZMP3_RX_BUFFER_LEN);
 	memset(retVal, '\0', 2);
 	
-	if(_serial->available()) //wait until first byte is 0x7e
+	// set 2 seconds as response timeout
+	uint16_t _timeout = 2000;
+	while(available() <= 0 && _timeout--) delay(1);
+
+	if(available()) //wait until first byte is 0x7e
 	{
 		// set timeout
 		long _startmillis = millis();		
 		do{
-			if(_serial->peek() == 0x7e){
+			if(peek() == 0x7e){
 				// reset fail flag
 				_fail = false;
 
@@ -523,7 +527,7 @@ int CytronEZMP3::readForResponses(uint16_t cmd, uint16_t fail, unsigned int time
 
 				// if cmd is correct, start data extraction
 				if(c == cmd){ 
-					_received = _serial->readBytes(recv_buf+4, len + 2);
+					_received = readBytes(recv_buf+4, len + 2);
 					break;
 				}
 
@@ -532,6 +536,9 @@ int CytronEZMP3::readForResponses(uint16_t cmd, uint16_t fail, unsigned int time
 					_fail = true;	
 				
 			}
+			else
+				read(); // clear the one byte from serial buffer
+				
 		}while(millis() - _startmillis < timeout);
 	}
 
