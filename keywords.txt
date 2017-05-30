@@ -6,13 +6,13 @@
 # Datatypes (KEYWORD1)
 #######################################
 
-CytronEZMP3		KEYWORD1
+CytronEZMP3	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
 
-play KEYWORD2
+play 	KEYWORD2
 next	KEYWORD2
 prev	KEYWORD2 
 setVolume	KEYWORD2
@@ -35,9 +35,18 @@ repeatTrack	KEYWORD2
 randomPlay	KEYWORD2
 playTrackFromFolder	KEYWORD2
 playFolderRepeat	KEYWORD2
-setErrorCallback	KEYWORD2				
+setErrorCallback	KEYWORD2
+isPlaying	KEYWORD2
+errorCode	KEYWORD2				
 
 #######################################
 # Constants (LITERAL1)
 #######################################
+BUSY	LITERAL1
+SLEEPING	LITERAL1
+SERIAL_WRONG_STACK	LITERAL1
+CHECKSUM_ERR	LITERAL1
+FILE_OUT_OF_INDEX	LITERAL1
+FILE_NOT_FOUND	LITERAL1
+DATA_MISMATCH	LITERAL1
 

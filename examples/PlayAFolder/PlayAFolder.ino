@@ -28,14 +28,15 @@ void setup () {
   Serial.begin(9600);
   pinMode(13, OUTPUT);
 
+  // set callback function before call begin()
+  mp3.setErrorCallback(errorCb);
+
   if (!mp3.begin(2, 3))
   {
     Serial.println("Initialisation failed");
     while (1);
   }
   mp3.setVolume(20);
-
-  mp3.setErrorCallback(errorCb);
 
   Serial.print("Device: ");
   Serial.println(mp3.getCurrentDevice() == 1 ? "U-Disk" : "microSD");
@@ -47,8 +48,8 @@ void setup () {
   // then place songs in each folder
   // the song name format is similar to the songs in folder "mp3"
 
-  mp3.playTrackFromFolder(1, 2); //folder 1, track 3
-  while(mp3.isPlaying()); // play the song for 5 seconds
+  mp3.playTrackFromFolder(1, 3); //folder 1, track 3
+  delay(5000); // play the song for 5 seconds
 
   mp3.playFolderRepeat(3); // repeat playing folder 3
 

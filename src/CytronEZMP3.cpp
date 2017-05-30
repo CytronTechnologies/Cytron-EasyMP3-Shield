@@ -3,7 +3,7 @@ CytronEZMP3.cpp
 Cytron EasyMP3 Shield Library Main Source File
 Created by Ng Beng Chet @ Cytron Technologies Sdn Bhd 
 Original Creation Date: Mar 10, 2016
-https://github.com/CytronTechnologies/CytronWiFiShield
+https://github.com/CytronTechnologies/Cytron-EasyMP3-Shield/
 
 Modified from DFPlayer_Mini_Mp3 Library Main Source File
 Credit to lisper <lisper.li@dfrobot.com> @ DFRobot
@@ -25,7 +25,8 @@ Distributed as-is; no warranty is given.
 
 //
 CytronEZMP3::CytronEZMP3():
-	isManyFolder(false)
+	isManyFolder(false),
+	dev_delay(0)
 {
 }
 
@@ -93,6 +94,7 @@ void CytronEZMP3::mp3_send_cmd (uint8_t cmd, uint16_t arg) {
 	
 	// clear serial buffer before start new command
 	flush();
+	listen(); //this is for multiple softwareserial
 
 	pinMode(_txpin, OUTPUT);
 	send_buf[3] = cmd;
@@ -101,7 +103,7 @@ void CytronEZMP3::mp3_send_cmd (uint8_t cmd, uint16_t arg) {
 	mp3_fill_checksum ();
 
 	send_func();
-	delay(100);
+	delay(100 + dev_delay); // min 100ms delay
 	pinMode(_txpin, INPUT_PULLUP);
 }
 
@@ -118,14 +120,29 @@ void CytronEZMP3::send_func () {
 
 bool CytronEZMP3::init ()
 {	
-	int timeout = 1000;
-	while(timeout--&&_serial->peek()!= 0x7e)
-	{
-		_serial->read();
-		delayMicroseconds(1000);
-	}
+	int timeout = 5000; // set 5 sec timeout after chip reset
+	long _startMillis = millis();
+	uint16_t _resp = 0;
+	do{
+		if(_serial->available()){
+			if(_serial->peek() != 0x7e)
+				_serial->read();
+			else{
+				_resp = millis() - _startMillis;
+				break;
+			}
+		}	
+	}while(millis() - _startMillis < timeout);
 
-	int stat = readForResponses(0x3f, 0x40, 5000, true);
+	#if DEBUG1
+		Serial.print("\r\nResponse Time:");
+		Serial.print(_resp);
+		Serial.println();
+	#endif
+
+	if(_resp == 0) return false; // no response
+
+	int stat = readForResponses(0x3f, 0x40, 100, true);
 	
 	if(stat <= 0) return false;
 
@@ -138,8 +155,14 @@ bool CytronEZMP3::init ()
 	switch(_dev)
 	{
 		case 1: 
-		case 2: break;
-		case 3: _dev = 2;break;
+		case 2: 
+			break;
+		case 3: 
+		#if DEBUG1
+			Serial.print("\r\nBoth TF card and U-Disk online\r\n");
+		#endif
+			_dev = 2;
+			break;
 		default: 
 		#if DEBUG1
 			Serial.print("\r\nPC online\r\n");
@@ -150,8 +173,14 @@ bool CytronEZMP3::init ()
 	}
 
 	setDevice(_dev);
-	if(_dev == 1) 
-		delay(2000); //U-disk takes longer time to initialise file system
+
+	if(_dev == 1){ // if the device is U-Disk
+		// Serial.println("\r\nU-Disk online\r\n");
+		// delay(2000); // U-disk takes longer time to initialise file system
+		
+		// set delay for send command
+		dev_delay = _resp;	// dev_delay = 500;
+	}
 	
 	setVolume(15);
 
@@ -554,14 +583,13 @@ int CytronEZMP3::readForResponses(uint16_t cmd, uint16_t fail, unsigned int time
 
 int CytronEZMP3::timedRead()
 {
-  int _timeout = 1000;
-  int c;
-  long _startMillis = millis();
-  do
-  {
-    c = _serial->read();
-    if (c >= 0) return c;
-  } while(millis() - _startMillis < _timeout);
+  	int _timeout = 1000;
+  	int c;
+  	long _startMillis = millis();
+  	do{
+    	c = _serial->read();
+    	if (c >= 0) return c;
+  	} while(millis() - _startMillis < _timeout);
 
-  return -1; // -1 indicates timeout
+  	return -1; // -1 indicates timeout
 }

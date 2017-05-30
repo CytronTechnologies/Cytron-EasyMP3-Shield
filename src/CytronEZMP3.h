@@ -3,7 +3,7 @@ CytronEZMP3.h
 Cytron EasyMP3 Shield Library header File
 Created by Ng Beng Chet @ Cytron Technologies Sdn Bhd 
 Original Creation Date: Mar 10, 2016
-https://github.com/CytronTechnologies/CytronWiFiShield
+https://github.com/CytronTechnologies/Cytron-EasyMP3-Shield/
 
 Modified from DFPlayer_Mini_Mp3 Library Main Source File
 Credit to lisper <lisper.li@dfrobot.com> @ DFRobot
@@ -140,6 +140,7 @@ class CytronEZMP3: public Stream
 	void single_loop (boolean state); //set single loop 
 	uint8_t retVal[2];
 	int timedRead();
+  	uint16_t dev_delay;
 };
 
 
