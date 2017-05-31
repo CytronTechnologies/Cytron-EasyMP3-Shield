@@ -192,7 +192,7 @@ bool CytronEZMP3::init ()
 	_serial->setTimeout(1000);
 
 	// start the fix
-	pinMode(_txpin, INPUT);
+	pinMode(_txpin, INPUT_PULLUP);
 
 	return true;
 	
