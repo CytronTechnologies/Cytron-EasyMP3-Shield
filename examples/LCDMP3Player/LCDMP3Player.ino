@@ -1,8 +1,8 @@
 #include <CytronEZMP3.h>
-//#include <SoftwareSerial.h>
 #include <LiquidCrystal.h> 
 
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+CytronEZMP3 mp3;
 
 byte vol = 15;  
 int i = 0;
@@ -56,6 +56,10 @@ void setup() {
   lcd.print("CYTRON TECH.");
   lcd.setCursor(0, 1);
   lcd.print("MP3 Shield");
+
+  // set callback function before call begin()
+  mp3.setErrorCallback(errorCb);
+  
   if(!mp3.begin(2,3))
   {
     lcd.clear();
@@ -92,16 +96,8 @@ void loop() {
     get_track_no = false;
   }
 
-  if(mp3.isFinishTrack())
+  if(!mp3.isPlaying())
     playNext();
-
-  if(mp3.isError)
-  {
-    lcd.clear();lcd.home();
-    lcd.print("Error: ");
-    lcd.print(mp3.errorCode());// show error
-    while(1); //stay here when got error
-  }
   
   if(disp_flag)
   {
@@ -221,5 +217,43 @@ void playPrev()
   //Serial.println("Playing previous song...");
   delay(2000); // 2 sec is needed to initialise next song and play it
   mp3.prev();
+}
+
+void errorCb()
+{
+  Serial.print(F("[ERROR] "));
+  switch (mp3.errorCode()) {
+    case BUSY:
+      Serial.println(F("Busy"));
+      break;
+    case SLEEPING:
+      Serial.println(F("In sleep mode"));
+      break;
+    case SERIAL_WRONG_STACK:
+      Serial.println(F("Serial wrong stack"));
+      break;
+    case CHECKSUM_ERR:
+      Serial.println(F("Checksum error"));
+      break;
+    case FILE_OUT_OF_INDEX:
+      Serial.println(F("File number is out of index"));
+      break;
+    case FILE_NOT_FOUND:
+      Serial.println(F("File not found"));
+      break;
+    case DATA_MISMATCH:
+      Serial.println(F("Data mismatch"));
+      break;
+    default:
+      Serial.println(F("Unknown error"));
+
+  }
+  while (1)
+  {
+    digitalWrite(13, HIGH);
+    delay(1000);
+    digitalWrite(13, LOW);
+    delay(1000);
+  }
 }
 
