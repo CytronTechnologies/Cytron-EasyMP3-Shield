@@ -42,7 +42,7 @@ Distributed as-is; no warranty is given.
 // 7~8	->	checksum = 0 - ( FF+06+0F+00+01+01 )
 // 9	->	EF is end code
 
-typedef enum mp3_error_type{
+typedef enum{
 	BUSY=1,
 	SLEEPING,
 	SERIAL_WRONG_STACK,
@@ -50,7 +50,7 @@ typedef enum mp3_error_type{
 	FILE_OUT_OF_INDEX,
 	FILE_NOT_FOUND,
 	DATA_MISMATCH=8,
-};
+}mp3_error_type;
 
 class CytronEZMP3: public Stream
 {
@@ -89,7 +89,7 @@ class CytronEZMP3: public Stream
 	void repeatTrack (uint16_t num); 
 	void randomPlay (); 
 	void setErrorCallback(void (*func)());
-	uint8_t errorCode();
+	mp3_error_type errorCode();
 	
 	int available();
 	size_t write(uint8_t);

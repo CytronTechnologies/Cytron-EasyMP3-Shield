@@ -457,8 +457,8 @@ void CytronEZMP3::setErrorCallback(void (*func)()){
 }
 
 //
-uint8_t CytronEZMP3::errorCode(){
-	return _errorCode;
+mp3_error_type CytronEZMP3::errorCode(){
+	return (mp3_error_type )_errorCode;
 }
 
 int CytronEZMP3::available()
