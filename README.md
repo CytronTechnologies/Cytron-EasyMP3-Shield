@@ -2,7 +2,7 @@
 
 Arduino library and example codes for Cytron Easy MP3 Shield
 
-Maintained by: Idris ([bengchet@cytron.io](mailto:bengchet@cytron.io))
+Maintained by: Ng Beng Chet ([bengchet@cytron.io](mailto:bengchet@cytron.io))
 
 The product page is located at [here](https://www.cytron.io/p-shield-ezmp3).
 
